@@ -114,7 +114,7 @@ client.on('interactionCreate', async interaction => {
 
 			var proxyEmbed = new EmbedBuilder()
 				.setColor(0xF47FFF)
-				.setTitle("Cog Dispenser")
+				.setTitle("NovaGG Dispenser")
 				.setDescription("Enjoy your new link")
 				.addFields(
 					{ name: "URL", value: randomLink },
