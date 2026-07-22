@@ -245,7 +245,15 @@ client.on('interactionCreate', async interaction => {
 						.setLabel("Close")
 						.setStyle(ButtonStyle.Danger),
 			  )
-			client.guilds.cache.get(process.env.GUILD_ID).client.channels.cache.get(process.env.REPORTS_ID).send({ embeds: [ reportEmbed ], components: [ row ] })
+try {
+    const reportChannel = await client.channels.fetch(process.env.REPORTS_ID);
+    if (reportChannel) {
+        await reportChannel.send({ embeds: [ reportEmbed ], components: [ row ] });
+    }
+} catch (error) {
+    console.error("Failed to send report to logging channel:", error);
+}
+
 			return interaction.reply({ content: "Your report has been submitted", ephemeral: true })
 		} else if (interaction.customId == "closeReportModule") {
 			var user = interaction.message.embeds[0].data.fields[2].value.replace("<", "").replace(">", "").replace("@", "")
