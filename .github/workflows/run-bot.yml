@@ -33,6 +33,8 @@ jobs:
         TOKEN: ${{ secrets.TOKEN }}
         CLIENT_ID: ${{ secrets.CLIENT_ID }}
         GUILD_ID: ${{ secrets.GUILD_ID }}
+        REPORTS_ID: ${{ secrets.REPORTS_ID }}  
+
       run: node index.js
 
     - name: Auto-Save Data Files
