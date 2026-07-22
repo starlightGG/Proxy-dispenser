@@ -40,6 +40,6 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@://github.com"
-        git add data/users.json data/requested.json || true
-        git commit -m "chore: auto-save proxy user usage metrics [skip ci]" || true
+        git add data/users.json data/requested.json data/links.json || true
+        git commit -m "chore: auto-save proxy links and usage metrics [skip ci]" || true
         git push || true
