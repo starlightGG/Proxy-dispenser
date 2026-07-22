@@ -152,19 +152,52 @@ client.on('interactionCreate', async interaction => {
 			newRequested[interaction.user.id].push(randomLink)
 			fs.writeFileSync("data/requested.json", JSON.stringify(newRequested, null, 2));
 		} else if (interaction.customId == "report") {
-			var reportModule = new ModalBuilder()
-				.setCustomId("reportModule")
-				.setTitle("Report");
-			var reportReason = new TextInputBuilder()
-				.setCustomId("reportReason")
-				.setLabel("Reason")
-				.setStyle(TextInputStyle.Paragraph)
-				.setMaxLength(500)
-  				.setRequired(true)
-			
-			var firstRow = new ActionRowBuilder().addComponents(reportReason);
-			reportModule.addComponents(firstRow);
-			await interaction.showModal(reportModule);		
+		    // 1. Get the original DM embed and the Open link button
+		    const originalEmbed = interaction.message.embeds[0];
+		    const originalComponents = interaction.message.components[0].components;
+		    
+		    // Find the original link URL from the first button
+		    const originalLink = originalComponents[0].url;
+		
+		    // 2. Re-create the DM buttons, but set the Report button to DISABLED and GREY
+		    const disabledRow = new ActionRowBuilder()
+		        .addComponents(
+		            new ButtonBuilder()
+		                .setURL(originalLink)
+		                .setLabel("Open")
+		                .setStyle(ButtonStyle.Link),
+		            new ButtonBuilder()
+		                .setCustomId("report")
+		                .setLabel("Report Sent")
+		                .setStyle(ButtonStyle.Secondary) // Turns it Grey
+		                .setDisabled(true)               // Anti-spam lock!
+		        );
+		
+		    // 3. Update their DM message instantly to disable the button
+		    await interaction.update({ 
+		        embeds: [ originalEmbed ], 
+		        components: [ disabledRow ] 
+		    });
+		
+		    // 4. NOW show them the text popup modal to fill out
+		    var reportModule = new ModalBuilder()
+		        .setCustomId("reportModule")
+		        .setTitle("Report");
+		        
+		    var reportReason = new TextInputBuilder()
+		        .setCustomId("reportReason")
+		        .setLabel("Reason")
+		        .setStyle(TextInputStyle.Paragraph)
+		        .setMaxLength(500)
+		        .setRequired(true);
+		    
+		    var firstRow = new ActionRowBuilder().addComponents(reportReason);
+		    reportModule.addComponents(firstRow);
+		    
+		    // Use interaction.followUp to display the modal since we already updated the message
+		    await interaction.followUp({ components: [] }); 
+		    await interaction.showModal(reportModule);     
+
 		} else if (interaction.customId == "reset") {
 			fs.writeFileSync("data/users.json", "{}");
 			return interaction.reply({ content: "Reset bot for all users", ephemeral: true })
