@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-const { Client, GatewayIntentBits, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder } = require('discord.js');
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds,
@@ -196,19 +196,26 @@ client.on('interactionCreate', async interaction => {
 			addModule.addComponents(firstRow);
 			await interaction.showModal(addModule);	
 		} else if (interaction.customId == "remove") {
-			var removeModule = new ModalBuilder()
-				.setCustomId("removeModule")
-				.setTitle("Remove Link");
-			var linkURL = new TextInputBuilder()
-				.setCustomId("linkURL")
-				.setLabel("URL")
-				.setStyle(TextInputStyle.Short)
-				.setMaxLength(500)
-  				.setRequired(true)
-			
-			var firstRow = new ActionRowBuilder().addComponents(linkURL);
-			removeModule.addComponents(firstRow);
-			await interaction.showModal(removeModule);	
+			var allLinks = JSON.parse(fs.readFileSync("data/links.json"));
+
+			if (allLinks.length === 0) {
+				return interaction.reply({ content: "No links available to remove", ephemeral: true })
+			}
+
+			var options = allLinks.slice(0, 25).map((link, index) => ({
+				label: link.length > 100 ? link.slice(0, 97) + "..." : link,
+				value: String(index)
+			}));
+
+			var removeSelect = new StringSelectMenuBuilder()
+				.setCustomId("removeSelect")
+				.setPlaceholder("Select a link to remove")
+				.addOptions(options);
+
+			var selectRow = new ActionRowBuilder().addComponents(removeSelect);
+
+			var note = allLinks.length > 25 ? "\n(Showing the first 25 of " + allLinks.length + " links)" : "";
+			return interaction.reply({ content: "Select a link to remove:" + note, components: [ selectRow ], ephemeral: true })
 		} else if (interaction.customId == "links") {
 			var allLinks = JSON.parse(fs.readFileSync("data/links.json"));
 			if (allLinks == []) {
@@ -316,15 +323,20 @@ try {
 			newLinks.push(inputURL)
 			fs.writeFileSync("data/links.json", JSON.stringify(newLinks, null, 2));
 			return interaction.reply({content: inputURL + " was successfully added", ephemeral: true})
-		} else if (interaction.customId == "removeModule") {
-			var newLinks = JSON.parse(fs.readFileSync("data/links.json"));
-			if (newLinks.includes(interaction.fields.getTextInputValue("linkURL"))) {
-				newLinks = newLinks.filter(link => link !== interaction.fields.getTextInputValue("linkURL"))
-				fs.writeFileSync("data/links.json", JSON.stringify(newLinks, null, 2));
-				return interaction.reply({content: interaction.fields.getTextInputValue("linkURL") + " was successfully removed", ephemeral: true})
-			} else {
-				return interaction.reply({content: interaction.fields.getTextInputValue("linkURL") + " was not found in the database. Click the Links button for a list of all links", ephemeral: true})
+		}
+	} else if (interaction.isStringSelectMenu()) {
+		if (interaction.customId == "removeSelect") {
+			var allLinks = JSON.parse(fs.readFileSync("data/links.json"));
+			var index = Number(interaction.values[0]);
+			var removedLink = allLinks[index];
+
+			if (removedLink === undefined) {
+				return interaction.update({ content: "That link no longer exists — the list may have changed. Click Remove again for an up-to-date list.", components: [] })
 			}
+
+			allLinks.splice(index, 1);
+			fs.writeFileSync("data/links.json", JSON.stringify(allLinks, null, 2));
+			return interaction.update({ content: removedLink + " was successfully removed", components: [] })
 		}
 	} else if (interaction.isUserContextMenuCommand()) {
 		if (interaction.commandName == "Reset") {
