@@ -6,7 +6,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# This rule cancels any older running versions of the bot automatically!
 concurrency:
   group: discord-bot-runtime
   cancel-in-progress: true
@@ -14,8 +13,12 @@ concurrency:
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write       # Expressly allows the runner to save your data files
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: true
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
@@ -31,3 +34,12 @@ jobs:
         CLIENT_ID: ${{ secrets.CLIENT_ID }}
         GUILD_ID: ${{ secrets.GUILD_ID }}
       run: node index.js
+
+    - name: Auto-Save Data Files
+      if: always()          # Runs even if the bot is manually stopped
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@://github.com"
+        git add data/users.json data/requested.json || true
+        git commit -m "chore: auto-save proxy user usage metrics [skip ci]" || true
+        git push || true
