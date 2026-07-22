@@ -1,5 +1,3 @@
-
-
 require('dotenv').config()
 
 const { Client, GatewayIntentBits, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
@@ -151,76 +149,20 @@ client.on('interactionCreate', async interaction => {
 			}
 			newRequested[interaction.user.id].push(randomLink)
 			fs.writeFileSync("data/requested.json", JSON.stringify(newRequested, null, 2));
-		} else if (interaction.customId == "reportModule") {
-			    const reasonText = interaction.fields.getTextInputValue('reportReason').trim();
+		} else if (interaction.customId == "report") {
+			var reportModule = new ModalBuilder()
+				.setCustomId("reportModule")
+				.setTitle("Report");
+			var reportReason = new TextInputBuilder()
+				.setCustomId("reportReason")
+				.setLabel("Reason")
+				.setStyle(TextInputStyle.Paragraph)
+				.setMaxLength(500)
+  				.setRequired(true)
 			
-			    // Anti-Spam Guard: If they bypass native rules and send empty spaces, reject it
-			    if (!reasonText || reasonText.length < 5) {
-			        return interaction.reply({ 
-			            content: "❌ Report rejected. You must provide a valid reason (at least 5 characters).", 
-			            ephemeral: true 
-			        });
-			    }
-			
-			    // Acknowledge the modal submission instantly
-			    await interaction.deferUpdate();
-			
-			    // 1. Grab the original DM message layout components
-			    const originalEmbed = interaction.message.embeds;
-			    const originalComponents = interaction.message.components[0].components;
-			    
-			    // Find the URL from the first button ("Open") so we don't break it
-			    const openButton = originalComponents.find(c => c.style === ButtonStyle.Link);
-			    const originalLink = openButton ? openButton.url : "https://discord.com";
-			
-			    // 2. Lock down the Report button now that the submission is valid!
-			    const disabledRow = new ActionRowBuilder()
-			        .addComponents(
-			            new ButtonBuilder()
-			                .setURL(originalLink)
-			                .setLabel("Open")
-			                .setStyle(ButtonStyle.Link),
-			            new ButtonBuilder()
-			                .setCustomId("report")
-			                .setLabel("Report Sent")
-			                .setStyle(ButtonStyle.Secondary) // Turns it Grey
-			                .setDisabled(true)               // Fully locks it down
-			        );
-			
-			    // 3. Update their DM to show the locked button
-			    await interaction.editReply({ 
-			        embeds: originalEmbed, 
-			        components: [ disabledRow ] 
-			    });
-			
-			    // 4. Send the log payload directly to your admin report channel
-			    const reportEmbed = new EmbedBuilder()
-			        .setColor(0x004953)
-			        .setTitle("⚠️ Proxy Report")
-			        .setDescription(`A proxy link has been reported as broken.`)
-			        .addFields(
-			            { name: "Reported By", value: `<@${interaction.user.id}>` },
-			            { name: "Reason Given", value: `\`\`\`${reasonText}\`\`\`` } // Wraps reason in a clean text block
-			        )
-			        .setFooter({ text: "Made by Nebelung", iconURL: "https://githubusercontent.com" });
-			    
-			    const adminRow = new ActionRowBuilder()
-			        .addComponents(
-			            new ButtonBuilder()
-			                .setCustomId("closeReport")
-			                .setLabel("Mark as Resolved")
-			                .setStyle(ButtonStyle.Success)
-			        );
-			
-			    try {
-			        const reportChannel = await client.channels.fetch(process.env.REPORTS_ID);
-			        if (reportChannel) {
-			            await reportChannel.send({ embeds: [ reportEmbed ], components: [ adminRow ] });
-			        }
-			    } catch (error) {
-			        console.error("Failed to send report to logging channel:", error);
-			    }
-
+			var firstRow = new ActionRowBuilder().addComponents(reportReason);
+			reportModule.addComponents(firstRow);
+			await interaction.showModal(reportModule);		
 		} else if (interaction.customId == "reset") {
 			fs.writeFileSync("data/users.json", "{}");
 			return interaction.reply({ content: "Reset bot for all users", ephemeral: true })
@@ -310,6 +252,23 @@ try {
     console.error("Failed to send report to logging channel:", error);
 }
 
+			// Disable the Report button on the original DM message so it can't be reported again
+			try {
+				var originalRow = ActionRowBuilder.from(interaction.message.components[0]);
+				var updatedComponents = originalRow.components.map(component => {
+					if (component.data.custom_id === "report") {
+						return ButtonBuilder.from(component)
+							.setLabel("Reported")
+							.setDisabled(true);
+					}
+					return ButtonBuilder.from(component);
+				});
+				originalRow.setComponents(updatedComponents);
+				await interaction.message.edit({ components: [ originalRow ] });
+			} catch (error) {
+				console.error("Failed to disable report button:", error);
+			}
+
 			return interaction.reply({ content: "Your report has been submitted", ephemeral: true })
 		} else if (interaction.customId == "closeReportModule") {
 			var user = interaction.message.embeds[0].data.fields[2].value.replace("<", "").replace(">", "").replace("@", "")
@@ -330,10 +289,24 @@ try {
 			interaction.message.delete()
 			return interaction.reply({content: "Closed and sent response to user", ephemeral: true})
 		} else if (interaction.customId == "addModule") {
+			var inputURL = interaction.fields.getTextInputValue("linkURL").trim();
+
+			var isValidURL = false;
+			try {
+				var parsedURL = new URL(inputURL);
+				isValidURL = parsedURL.protocol === "http:" || parsedURL.protocol === "https:";
+			} catch (error) {
+				isValidURL = false;
+			}
+
+			if (!isValidURL) {
+				return interaction.reply({ content: inputURL + " is not a valid URL. Please include http:// or https:// and try again.", ephemeral: true })
+			}
+
 			var newLinks = JSON.parse(fs.readFileSync("data/links.json"));
-			newLinks.push(interaction.fields.getTextInputValue("linkURL"))
+			newLinks.push(inputURL)
 			fs.writeFileSync("data/links.json", JSON.stringify(newLinks, null, 2));
-			return interaction.reply({content: interaction.fields.getTextInputValue("linkURL") + " was successfully added", ephemeral: true})
+			return interaction.reply({content: inputURL + " was successfully added", ephemeral: true})
 		} else if (interaction.customId == "removeModule") {
 			var newLinks = JSON.parse(fs.readFileSync("data/links.json"));
 			if (newLinks.includes(interaction.fields.getTextInputValue("linkURL"))) {
@@ -365,4 +338,4 @@ setTimeout(() => {
     console.log("5h 50m reached. Shutting down cleanly for the next cron loop...");
     client.destroy(); // Safely closes the Discord gateway connection
     process.exit(0);  // Tells GitHub the job completed successfully with no errors
-}, 350 * 60 * 1000); 
+}, 350 * 60 * 1000);
