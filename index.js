@@ -53,7 +53,7 @@ client.on('interactionCreate', async interaction => {
         )
 
 		var panelEmbed = new EmbedBuilder()
-			.setColor(0x004953)
+			.setColor(0xF47FFF)
 			.setTitle("NovaGG Dispenser")
 			.setDescription("Click the button below to get a new proxy link")
 			.setFooter({ text: "Made by NovaGG", iconURL: "https://avatars.githubusercontent.com/u/153460070?v=4&size=64" })
@@ -81,7 +81,7 @@ client.on('interactionCreate', async interaction => {
         )
 
 		var panelEmbed = new EmbedBuilder()
-			.setColor(0x004953)
+			.setColor(0xF47FFF)
 			.setTitle("Admin Panel")
 			.setDescription("Admin commands for the Proxy Dispenser")
 			.setFooter({ text: "Made by NovaGG", iconURL: "https://avatars.githubusercontent.com/u/153460070?v=4&size=64" })
@@ -113,7 +113,7 @@ client.on('interactionCreate', async interaction => {
 			interaction.deferUpdate()
 
 			var proxyEmbed = new EmbedBuilder()
-				.setColor(0x004953)
+				.setColor(0xF47FFF)
 				.setTitle("Cog Dispenser")
 				.setDescription("Enjoy your new link")
 				.addFields(
@@ -219,7 +219,7 @@ client.on('interactionCreate', async interaction => {
 				allLinks = allLinks.join("\n")
 			}
 			var linksEmbed = new EmbedBuilder()
-				.setColor(0x004953)
+				.setColor(0xF47FFF)
 				.setTitle("Links")
 				.setDescription("Every link in the database!\n```\n" + allLinks + "\n```")
 				.setFooter({ text: "Made by NovaGG", iconURL: "https://avatars.githubusercontent.com/u/153460070?v=4&size=64" })
@@ -228,7 +228,7 @@ client.on('interactionCreate', async interaction => {
 	} else if (interaction.isModalSubmit()) {
 		if (interaction.customId == "reportModule") {
 			var reportEmbed = new EmbedBuilder()
-				.setColor(0x004953)
+				.setColor(0xF47FFF)
 				.setTitle("Proxy Report")
 				.setDescription("A link has been reported by a user")
 				.addFields(
@@ -251,7 +251,7 @@ client.on('interactionCreate', async interaction => {
 			var user = interaction.message.embeds[0].data.fields[2].value.replace("<", "").replace(">", "").replace("@", "")
 			client.users.fetch(user, false).then((user) => {
 			var closedReportEmbed = new EmbedBuilder()
-				.setColor(0x004953)
+				.setColor(0xF47FFF)
 				.setTitle("Closed Report")
 				.setDescription("A reported link by you has been resolved")
 				.addFields(
