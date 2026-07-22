@@ -1,8 +1,10 @@
 name: Run Discord Bot
 on:
+  schedule:
+    - cron: '0 */6 * * *'   # Automatically re-starts the bot every 6 hours
   push:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:      # Keeps the manual button there just in case
 jobs:
   run-bot:
     runs-on: ubuntu-latest
