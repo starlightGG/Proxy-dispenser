@@ -151,52 +151,75 @@ client.on('interactionCreate', async interaction => {
 			}
 			newRequested[interaction.user.id].push(randomLink)
 			fs.writeFileSync("data/requested.json", JSON.stringify(newRequested, null, 2));
-		} else if (interaction.customId == "report") {
-		    // 1. Get the original DM embed and the Open link button
-		    const originalEmbed = interaction.message.embeds[0];
-		    const originalComponents = interaction.message.components[0].components;
-		    
-		    // Find the original link URL from the first button
-		    const originalLink = originalComponents[0].url;
-		
-		    // 2. Re-create the DM buttons, but set the Report button to DISABLED and GREY
-		    const disabledRow = new ActionRowBuilder()
-		        .addComponents(
-		            new ButtonBuilder()
-		                .setURL(originalLink)
-		                .setLabel("Open")
-		                .setStyle(ButtonStyle.Link),
-		            new ButtonBuilder()
-		                .setCustomId("report")
-		                .setLabel("Report Sent")
-		                .setStyle(ButtonStyle.Secondary) // Turns it Grey
-		                .setDisabled(true)               // Anti-spam lock!
-		        );
-		
-		    // 3. Update their DM message instantly to disable the button
-		    await interaction.update({ 
-		        embeds: [ originalEmbed ], 
-		        components: [ disabledRow ] 
-		    });
-		
-		    // 4. NOW show them the text popup modal to fill out
-		    var reportModule = new ModalBuilder()
-		        .setCustomId("reportModule")
-		        .setTitle("Report");
-		        
-		    var reportReason = new TextInputBuilder()
-		        .setCustomId("reportReason")
-		        .setLabel("Reason")
-		        .setStyle(TextInputStyle.Paragraph)
-		        .setMaxLength(500)
-		        .setRequired(true);
-		    
-		    var firstRow = new ActionRowBuilder().addComponents(reportReason);
-		    reportModule.addComponents(firstRow);
-		    
-		    // Use interaction.followUp to display the modal since we already updated the message
-		    await interaction.followUp({ components: [] }); 
-		    await interaction.showModal(reportModule);     
+		} else if (interaction.customId == "reportModule") {
+			    const reasonText = interaction.fields.getTextInputValue('reportReason').trim();
+			
+			    // Anti-Spam Guard: If they bypass native rules and send empty spaces, reject it
+			    if (!reasonText || reasonText.length < 5) {
+			        return interaction.reply({ 
+			            content: "❌ Report rejected. You must provide a valid reason (at least 5 characters).", 
+			            ephemeral: true 
+			        });
+			    }
+			
+			    // Acknowledge the modal submission instantly
+			    await interaction.deferUpdate();
+			
+			    // 1. Grab the original DM message layout components
+			    const originalEmbed = interaction.message.embeds;
+			    const originalComponents = interaction.message.components[0].components;
+			    
+			    // Find the URL from the first button ("Open") so we don't break it
+			    const openButton = originalComponents.find(c => c.style === ButtonStyle.Link);
+			    const originalLink = openButton ? openButton.url : "https://discord.com";
+			
+			    // 2. Lock down the Report button now that the submission is valid!
+			    const disabledRow = new ActionRowBuilder()
+			        .addComponents(
+			            new ButtonBuilder()
+			                .setURL(originalLink)
+			                .setLabel("Open")
+			                .setStyle(ButtonStyle.Link),
+			            new ButtonBuilder()
+			                .setCustomId("report")
+			                .setLabel("Report Sent")
+			                .setStyle(ButtonStyle.Secondary) // Turns it Grey
+			                .setDisabled(true)               // Fully locks it down
+			        );
+			
+			    // 3. Update their DM to show the locked button
+			    await interaction.editReply({ 
+			        embeds: originalEmbed, 
+			        components: [ disabledRow ] 
+			    });
+			
+			    // 4. Send the log payload directly to your admin report channel
+			    const reportEmbed = new EmbedBuilder()
+			        .setColor(0x004953)
+			        .setTitle("⚠️ Proxy Report")
+			        .setDescription(`A proxy link has been reported as broken.`)
+			        .addFields(
+			            { name: "Reported By", value: `<@${interaction.user.id}>` },
+			            { name: "Reason Given", value: `\`\`\`${reasonText}\`\`\`` } // Wraps reason in a clean text block
+			        )
+			        .setFooter({ text: "Made by Nebelung", iconURL: "https://githubusercontent.com" });
+			    
+			    const adminRow = new ActionRowBuilder()
+			        .addComponents(
+			            new ButtonBuilder()
+			                .setCustomId("closeReport")
+			                .setLabel("Mark as Resolved")
+			                .setStyle(ButtonStyle.Success)
+			        );
+			
+			    try {
+			        const reportChannel = await client.channels.fetch(process.env.REPORTS_ID);
+			        if (reportChannel) {
+			            await reportChannel.send({ embeds: [ reportEmbed ], components: [ adminRow ] });
+			        }
+			    } catch (error) {
+			        console.error("Failed to send report to logging channel:", error);
+			    }
 
 		} else if (interaction.customId == "reset") {
 			fs.writeFileSync("data/users.json", "{}");
