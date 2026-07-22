@@ -295,3 +295,10 @@ client.on('interactionCreate', async interaction => {
 });
 
 client.login(process.env.TOKEN);
+// Automatically shut down cleanly after 5 hours and 50 minutes (350 minutes)
+// This prevents the GitHub 6-hour force-kill and allows a clean hand-off!
+setTimeout(() => {
+    console.log("5h 50m reached. Shutting down cleanly for the next cron loop...");
+    client.destroy(); // Safely closes the Discord gateway connection
+    process.exit(0);  // Tells GitHub the job completed successfully with no errors
+}, 350 * 60 * 1000); 
