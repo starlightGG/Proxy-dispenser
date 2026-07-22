@@ -1,10 +1,15 @@
 name: Run Discord Bot
 on:
   schedule:
-    - cron: '25 */6 * * *'   # Automatically spins up a fresh runner every 6 hours
+    - cron: '25 */6 * * *'
   push:
     branches: [ main ]
-  workflow_dispatch:      # Keeps your manual "Run workflow" play button active
+  workflow_dispatch:
+
+# This rule cancels any older running versions of the bot automatically!
+concurrency:
+  group: discord-bot-runtime
+  cancel-in-progress: true
 
 jobs:
   run-bot:
