@@ -254,17 +254,25 @@ try {
 
 			// Disable the Report button on the original DM message so it can't be reported again
 			try {
-				var originalRow = ActionRowBuilder.from(interaction.message.components[0]);
-				var updatedComponents = originalRow.components.map(component => {
-					if (component.data.custom_id === "report") {
-						return ButtonBuilder.from(component)
-							.setLabel("Reported")
-							.setDisabled(true);
+				if (!interaction.message) {
+					console.error("Cannot disable report button: interaction.message is undefined");
+				} else {
+					var originalRow = interaction.message.components[0];
+					var newRow = new ActionRowBuilder();
+
+					for (const component of originalRow.components) {
+						var btn = ButtonBuilder.from(component);
+						var customId = component.customId ?? component.custom_id ?? component.data?.custom_id;
+
+						if (customId === "report") {
+							btn.setLabel("Reported").setDisabled(true);
+						}
+
+						newRow.addComponents(btn);
 					}
-					return ButtonBuilder.from(component);
-				});
-				originalRow.setComponents(updatedComponents);
-				await interaction.message.edit({ components: [ originalRow ] });
+
+					await interaction.message.edit({ components: [ newRow ] });
+				}
 			} catch (error) {
 				console.error("Failed to disable report button:", error);
 			}
