@@ -271,7 +271,8 @@ try {
 						newRow.addComponents(btn);
 					}
 
-					await interaction.message.edit({ components: [ newRow ] });
+					var dmChannel = await client.channels.fetch(interaction.channelId);
+					await dmChannel.messages.edit(interaction.message.id, { components: [ newRow ] });
 				}
 			} catch (error) {
 				console.error("Failed to disable report button:", error);
