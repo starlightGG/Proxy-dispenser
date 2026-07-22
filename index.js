@@ -1,3 +1,6 @@
+const http = require('http');
+http.createServer((req, res) => res.end('Bot is alive!')).listen(process.env.PORT || 3000);
+
 require('dotenv').config()
 
 const { Client, GatewayIntentBits, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
