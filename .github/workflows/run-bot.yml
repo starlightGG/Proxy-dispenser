@@ -1,22 +1,28 @@
 name: Run Discord Bot
 on:
   schedule:
-    - cron: '0 */6 * * *'   # Automatically re-starts the bot every 6 hours
+    - cron: '25 */6 * * *'   # Automatically spins up a fresh runner every 6 hours
   push:
     branches: [ main ]
-  workflow_dispatch:      # Keeps the manual button there just in case
+  workflow_dispatch:      # Keeps your manual "Run workflow" play button active
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+
     - name: Install dependencies
       run: npm install
+
     - name: Start Bot
       env:
-        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        TOKEN: ${{ secrets.TOKEN }}
+        CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        GUILD_ID: ${{ secrets.GUILD_ID }}
       run: node index.js
